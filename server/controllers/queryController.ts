@@ -23,11 +23,15 @@ export const createQuery = async (req: Request, res: Response) => {
 
 export const getAllQueries = async (req: Request, res: Response) => {
   try {
-    const queries = await Query.find().sort({ createdAt: -1 });
+    // Fetch queries sorted by consultation date
+    const queries = await Query.find().sort({ consultationDate: -1 });
     res.json(queries);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to fetch queries", error });
+    console.error("Fetching queries error:", error);
+    res.status(500).json({
+      message: "Failed to fetch queries",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 };
 

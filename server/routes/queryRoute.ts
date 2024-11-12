@@ -14,11 +14,7 @@ const router = express.Router();
 router.post("/make-query", createQuery as RequestHandler);
 
 // Protected routes for admin
-router.get(
-  "/show-query",
-  auth as RequestHandler,
-  getAllQueries as RequestHandler,
-);
+router.get("/queries", auth as RequestHandler, getAllQueries as RequestHandler);
 
 router.patch(
   "/:id/status",
