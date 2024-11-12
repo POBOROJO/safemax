@@ -3,6 +3,7 @@ import { ModeToggle } from "./mode-toggle";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Mail } from "lucide-react";
 
 export default function Layout({
   children,
@@ -121,6 +122,7 @@ export default function Layout({
                     });
                   }}
                 >
+                  <Mail className="mr-2 h-4 w-4" />
                   Login
                 </Button>
                 <Button onClick={handleSignupNavigation}>Sign Up</Button>

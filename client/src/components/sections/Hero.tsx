@@ -80,6 +80,11 @@ export default function Hero() {
               size="lg"
               variant="outline"
               className="backdrop-blur-sm bg-background/10 border-primary/20 hover:bg-primary/20"
+              onClick={() =>
+                document
+                  .getElementById("about")
+                  ?.scrollIntoView({ behavior: "smooth" })
+              }
             >
               Learn More
             </Button>

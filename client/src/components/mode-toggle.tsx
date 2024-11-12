@@ -1,4 +1,4 @@
-import { Moon, Sun } from "lucide-react";
+import { MoonIcon, SunIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,10 +15,8 @@ export function ModeToggle() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon">
-          {/* Use Tailwind's dark mode utility `dark:hidden` to hide the Sun icon in dark mode */}
-          <Sun className="h-[1.2rem] w-[1.2rem] dark:hidden" />
-          {/* Use Tailwind's dark mode utility `hidden` to hide the Moon icon in light mode */}
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] hidden dark:block" />
+          <SunIcon className="h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <MoonIcon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
