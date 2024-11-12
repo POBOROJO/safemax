@@ -33,7 +33,7 @@ export const registerUser = async (req: Request, res: Response) => {
       }
     }
 
-    // Password Strength Validation - Changed to 8 characters
+    // Password Strength Validation
     const passwordStrengthRegex =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordStrengthRegex.test(password)) {
@@ -69,9 +69,17 @@ export const registerUser = async (req: Request, res: Response) => {
       newUser.role,
     );
 
-    // Respond with user details and token
+    // Set token in HTTP-only cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    });
+
+    // Respond with user details
     res.status(201).json({
-      token,
+      message: "Account created successfully",
       user: {
         id: newUser._id,
         email: newUser.email,
@@ -80,18 +88,15 @@ export const registerUser = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Registration Error:", error);
-
-    // Detailed error handling
     if (error instanceof Error) {
       return res.status(500).json({
         message: "Server error during registration",
         error: error.message,
       });
     }
-
-    res
-      .status(500)
-      .json({ message: "Unexpected server error during registration" });
+    res.status(500).json({
+      message: "Unexpected server error during registration",
+    });
   }
 };
 
@@ -115,9 +120,17 @@ export const loginUser = async (req: Request, res: Response) => {
     // Generate token
     const token = generateToken(user._id.toString(), user.email, user.role);
 
-    // Respond with user details and token
+    // Set token in HTTP-only cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    });
+
+    // Respond with user details
     res.json({
-      token,
+      message: `Welcome back ${user.email} (${user.role})`,
       user: {
         id: user._id,
         email: user.email,
@@ -133,15 +146,28 @@ export const loginUser = async (req: Request, res: Response) => {
 // Logout User/Admin
 export const logoutUser = async (req: Request, res: Response) => {
   try {
-  } catch (error) {}
+    // Clear the token cookie
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    res.json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error during logout" });
+  }
 };
 
 // Get Current User Profile
 export const getCurrentUser = async (req: Request, res: Response) => {
   try {
-    // req.user is set by the auth middleware
-    const user = await User.findById(req.user.id).select("-password");
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
 
+    const user = await User.findById(req.user.id).select("-password");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -160,18 +186,18 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 // Update User Profile
 export const updateUserProfile = async (req: Request, res: Response) => {
   try {
-    const { email } = req.body;
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
 
-    // Ensure only user can update their own profile
+    const { email } = req.body;
     const user = await User.findById(req.user.id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Update email
     if (email) {
-      // Check if new email is already in use
       const existingUser = await User.findOne({ email });
       if (existingUser && existingUser._id.toString() !== req.user.id) {
         return res.status(400).json({ message: "Email already in use" });
@@ -195,35 +221,33 @@ export const updateUserProfile = async (req: Request, res: Response) => {
 // Change User Password
 export const changePassword = async (req: Request, res: Response) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
 
-    // Find user by ID
+    const { currentPassword, newPassword } = req.body;
     const user = await User.findById(req.user.id);
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Verify current password
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Current password is incorrect" });
     }
 
-    // Validate new password strength
     const passwordStrengthRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordStrengthRegex.test(newPassword)) {
       return res.status(400).json({
         message:
-          "New password must be at least 12 characters long and include uppercase, lowercase, number, and special character",
+          "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character",
       });
     }
 
-    // Hash new password
     const salt = await bcrypt.genSalt(10);
     const hashedNewPassword = await bcrypt.hash(newPassword, salt);
-
-    // Update user password
     user.password = hashedNewPassword;
     await user.save();
 
@@ -232,4 +256,13 @@ export const changePassword = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({ message: "Server error changing password" });
   }
+};
+
+export default {
+  registerUser,
+  loginUser,
+  logoutUser,
+  getCurrentUser,
+  updateUserProfile,
+  changePassword,
 };

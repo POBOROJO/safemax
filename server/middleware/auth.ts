@@ -1,25 +1,40 @@
-declare global {
-  namespace Express {
-    interface Request {
-      user?: any;
-    }
-  }
-}
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-export const auth = (req: Request, res: Response, next: NextFunction) => {
+// Extend Request type to include user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email: string;
+        role: string;
+      };
+    }
+  }
+}
+
+export const auth = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
+    // Get token from cookie instead of header
+    const token = req.cookies.token;
 
     if (!token) {
-      throw new Error();
+      return res.status(401).json({ message: "Authentication required" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      id: string;
+      email: string;
+      role: string;
+    };
+
+    // Add user data to request
     req.user = decoded;
     next();
   } catch (error) {
-    res.status(401).json({ error: "Please authenticate" });
+    console.error("Auth middleware error:", error);
+    res.status(401).json({ message: "Invalid or expired token" });
   }
 };

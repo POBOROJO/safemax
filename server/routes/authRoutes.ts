@@ -5,6 +5,7 @@ import {
   loginUser,
   getCurrentUser,
   updateUserProfile,
+  logoutUser,
 } from "../controllers/authController";
 import { auth } from "../middleware/auth";
 import { validateRegistration, validateLogin } from "../middleware/validation";
